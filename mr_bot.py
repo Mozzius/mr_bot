@@ -2,9 +2,9 @@ import string
 import asyncio
 import discord
 
-bot = discord.Client()
-
 print("Initialising...")
+
+bot = discord.Client()
 
 def parse(msg):
     if msg.startswith('hey') or msg.startswith('yo'):
@@ -17,12 +17,16 @@ def parse(msg):
 def parsecommand(commandarr):
     if commandarr[0] == "textmute" or (commandarr[0] == "shut" and commandarr[1] == "up"):
         return "mute"
-    if commandarr[0] == "introduce":
+    elif commandarr[0] == "untextmute":
+        return "unmute"
+    elif commandarr[0] == "introduce":
         return "intro"
-    if commandarr[0] == "search" or (commandarr[0] == "look" and commandarr[1] == "up"):
+    elif commandarr[0] == "search" or (commandarr[0] == "look" and commandarr[1] == "up"):
         return "mute"
-    if commandarr[0] == "is":
+    elif commandarr[0] == "is" or commandarr[0] == "are":
         return "is"
+    elif commandarr[0] == "fuck" and commandarr[1] == "me":
+        return "fuck"
     else:
         return "unsure"
 
@@ -35,6 +39,11 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    with open("muted.txt", "r") as m:
+        if message.author in m.readlines():
+            print("Deleted",message.author,"'s message")
+            await bot.delete_message(message)
+            return
     msg = message.content
     msg.strip(".,!?").lower()
     relevent = parse(msg)
@@ -45,26 +54,47 @@ async def on_message(message):
         else:
             command = ""
             commandarr = splitmsg[relevent:]
-            #for word in commandarr:
+            #for word in commandarr[1:]:
             #    command += word
             #    command += " "
             keyword = parsecommand(commandarr)
             if keyword == "mute":
                 if str(message.author.top_role) == "moddo":
                     await bot.send_message(message.channel, "Muting "+commandarr[1])
+                    with open("muted.txt","r") as m:
+                        lines = m.readlines()
+                    with open("muted.txt","w") as m:
+                        for line in lines:
+                                m.write(line+"\n")
+                        m.write(commandarr[1])
+                else:
+                    await bot.send_message(message.channel, "You don't have permission to do that, "+message.author.nick)
+            elif keyword == "unmute":
+                if str(message.author.top_role) == "moddo":
+                    await bot.send_message(message.channel, "Unmuting "+commandarr[1])
+                    with open("muted.txt","r") as m:
+                        lines = m.readlines()
+                    with open("muted.txt","w") as m:
+                        for line in lines:
+                            if line != command:
+                                m.write(line+"\n")
                 else:
                     await bot.send_message(message.channel, "You don't have permission to do that, "+message.author.nick)
             elif keyword == "intro":
-                if message.author.top_role == "moddo":
-                    await bot.send_message(message.channel, "Hey @everybody! I'm your new bot friend, mr bot. Summond me using \"hey mr bot\"!")
-                else:
-                    await bot.send_message(message.channel, "No")
+                #if message.author.top_role == "moddo":
+                await bot.send_message(message.channel, "Hey everybody! I'm your new bot friend, mr bot. Summond me using \"hey mr bot\"!")
+                #else:
+                #    await bot.send_message(message.channel, "No")
             elif keyword == "search":
                 await bot.send_message(message.channel, "I would, but I don't know how :(")
             elif keyword == "is":
                 await bot.send_message(message.channel, "Probably")
+            elif keyword == "fuck":
+                await bot.send_message(message.channel, "Bit gay")
             elif keyword == "unsure":
                 await bot.send_message(message.channel, "Not sure what that means, sorry :/")
+    elif "silly bot" in msg:
+        await bot.send_message(message.channel, "Sorry :(")
                 
 
 with open("token.txt") as o:
